@@ -1,5 +1,5 @@
 # HOMEWORK 3
-# Group nr xxx
+# Group nr 15
 
 # FUNCTION: calc.median.diff: --------------
 # Function: calculate the difference in median between two groups.
@@ -113,7 +113,7 @@ for(delta in c(0, 0.01, 0.05, 0.1, 0.25)){
   if(delta != 0){
     title <- paste('Power of perm vs wmw for different distributions for delta = ', delta)
   }else{
-    title <- paste('Proportion of type II error - delta = ', delta)
+    title <- paste('Proportion of type I error - delta = ', delta)
   }
   
   plot1 <- ggplot(data = df_power, aes(x = Distribution, y = value, fill = variable)) + 
