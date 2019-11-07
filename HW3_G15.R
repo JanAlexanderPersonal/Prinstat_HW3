@@ -2,6 +2,7 @@
 # Group nr 15
 #
 #
+install.packages('coin','ggplot2', 'reshape2', 'rmutil')
 library(coin)
 library(ggplot2)
 library(reshape2)
@@ -112,9 +113,10 @@ dist_args <- list(list(n, 3), list(n, 5), list(n), list(n), list(n), list(n), li
 
 power.perm <- power.wmw <- power.t <- c()
 
+for(N_tests_magn in c(1, 2, 3, 4)){
 for(delta in c(0, 0.5, 0.75)){
   for(i in 1:7){
-    N_tests <- 1000
+    N_tests <- 10^N_tests_magn
     d <- distributions[i]
     res <- calculate.power(delta, d, dist_args[[i]], N_tests = N_tests)
     power.perm[i] <- res[1]
@@ -130,7 +132,7 @@ for(delta in c(0, 0.5, 0.75)){
   df_power$t <- power.t
   df_power <- melt(df_power, id.vars = 'Distribution')
   
-  write.csv(df_power, paste('delta_', delta*100, 'percent.csv', sep=''))
+  write.csv(df_power, paste('delta_', delta*100, 'percent_N', N_tests , '.csv', sep=''))
   
   if(delta != 0){
     title <- paste('Power of perm vs wmw for different distributions for delta = ', delta,
@@ -147,8 +149,9 @@ for(delta in c(0, 0.5, 0.75)){
     ylab('Power') + 
     coord_flip()
 
-  ggsave( paste('delta', delta*100, '.png', sep = ''), 
+  ggsave( paste('delta', delta*100, 'percent_N', N_tests ,'.png', sep = ''), 
           plot = plot1, 
           device = 'png'
           )
+}
 }
