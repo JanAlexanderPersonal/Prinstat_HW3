@@ -5,6 +5,7 @@
 library(coin)
 library(ggplot2)
 library(reshape2)
+library(rmutil)
 #
 # FUNCTION: calc.median.diff: --------------
 # Function: calculate the difference in median between two groups.
@@ -103,17 +104,16 @@ calculate.power <- function(delta, d, dist_arg, N_tests = 150, p_value = 0.05){
   )
 }
 
-
 # Simulations
 n <- 20
-distributions <- c('rt', 'rt', 'rexp', 'rlogis', 'rnorm', 'runif')
-dist_names <- c('t3', 't5', 'exp', 'logis', 'norm', 'unif')
-dist_args <- list( list(n, 3), list(n, 5), list(n), list(n), list(n), list(n))
+distributions <- c('rt', 'rt', 'rexp', 'rlogis', 'rnorm', 'runif', 'rlaplace')
+dist_names <- c('t3', 't5', 'exp', 'logis', 'norm', 'unif', 'laplace')
+dist_args <- list(list(n, 3), list(n, 5), list(n), list(n), list(n), list(n), list(n))
 
 power.perm <- power.wmw <- power.t <- c()
 
 for(delta in c(0, 0.5, 0.75)){
-  for(i in 1:6){
+  for(i in 1:7){
     N_tests <- 1000
     d <- distributions[i]
     res <- calculate.power(delta, d, dist_args[[i]], N_tests = N_tests)
