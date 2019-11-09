@@ -2,11 +2,10 @@
 # Group nr 15
 #
 #
-install.packages('coin','ggplot2', 'reshape2', 'rmutil')
-library(coin)
-library(ggplot2)
-library(reshape2)
-library(rmutil)
+# Install and load packages
+packages <- c('coin','ggplot2', 'reshape2', 'rmutil')
+install.packages(packages)
+lapply(packages, library, character.only = TRUE)
 #
 # FUNCTION: calc.median.diff: --------------
 # Function: calculate the difference in median between two groups.
@@ -18,7 +17,7 @@ calc.median.diff <- function(ind, vec){
   # make both groups
   group1 <- vec[ind]
   group2 <- vec[!(1:length(vec)) %in% ind]
-  # calculate the difference in means
+  # calculate the difference in medians
   return(median(group1) - median(group2))
 }
 
@@ -77,7 +76,7 @@ median.test <- function(x, y){
 # N_tests = the amount of repetitions
 # p_value = significance level
 #
-calculate.power <- function(delta, d, dist_arg, N_tests = 150, p_value = 0.05){
+calculate.power <- function(delta, d, dist_arg, N_tests = 1000, p_value = 0.05){
   cat('power calculation for distribution : ')
   cat(d)
   cat('\n')
@@ -113,10 +112,9 @@ dist_args <- list(list(n, 3), list(n, 5), list(n), list(n), list(n), list(n), li
 
 power.perm <- power.wmw <- power.t <- c()
 
-for(N_tests_magn in c(1, 2, 3, 4)){
 for(delta in c(0, 0.5, 0.75)){
   for(i in 1:7){
-    N_tests <- 10^N_tests_magn
+    N_tests <- 1000
     d <- distributions[i]
     res <- calculate.power(delta, d, dist_args[[i]], N_tests = N_tests)
     power.perm[i] <- res[1]
@@ -132,7 +130,7 @@ for(delta in c(0, 0.5, 0.75)){
   df_power$t <- power.t
   df_power <- melt(df_power, id.vars = 'Distribution')
   
-  write.csv(df_power, paste('delta_', delta*100, 'percent_N', N_tests , '.csv', sep=''))
+  write.csv(df_power, paste('delta_', delta*100, '.csv', sep=''))
   
   if(delta != 0){
     title <- paste('Power of perm vs wmw for different distributions for delta = ', delta,
@@ -149,9 +147,8 @@ for(delta in c(0, 0.5, 0.75)){
     ylab('Power') + 
     coord_flip()
 
-  ggsave( paste('delta', delta*100, 'percent_N', N_tests ,'.png', sep = ''), 
+  ggsave( paste('delta_', delta*100, '.png', sep = ''), 
           plot = plot1, 
           device = 'png'
           )
-}
 }
