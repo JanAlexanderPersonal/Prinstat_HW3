@@ -3,11 +3,11 @@ title: 'Principles of Statistical Data Analysis: HW3'
 author: "Jan Alexander, Brecht Dewilde, Arthur Leloup"
 date: "2019 - 2020"
 documentclass: article
+geometry: margin = 3.5cm
 output:
   pdf_document:
     toc: true
     toc_depth: 3
-    fig_width: 3
     number_sections: true
 ---
 
@@ -105,9 +105,13 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc rhoncus orci vitae
 # Addendum: full code
 
 ```{r addendum, eval=FALSE}
+# HOMEWORK 3
+# Group nr 15
+#
+#
 # Install and load packages
 packages <- c('coin','ggplot2', 'reshape2', 'rmutil')
-install.packages(packages)
+# install.packages(packages)
 lapply(packages, library, character.only = TRUE)
 #
 # FUNCTION: calc.median.diff: --------------
@@ -168,90 +172,67 @@ median.test <- function(x, y){
   return(mean(abs(realization) <= abs(median.diff)))
 }
 
-# FUNCTION: calculate.power: --------------
-# Function: calculate the proportion of tests that yield a p-value
-# smaller than 0.05 for the median.test, the Wilcoxon exact
-# test and the permutation t-test after repetitive sampling.
-# 
-# param: delta = effect size
-# param: d = random distribution function
-# dist_arg = arguments or the distribution function
-# N_tests = the amount of repetitions
-# p_value = significance level
-#
-calculate.power <- function(delta, d, dist_arg, N_tests = 1000, p_value = 0.05){
-  cat('power calculation for distribution : ')
-  cat(d)
-  cat('\n')
-  p.perm <- p.wmw <- p.t <- c()
-  for(i in 1:N_tests){
-    Y1 <- do.call(what = d, 
-                  args = dist_arg)
-    Y2 <- do.call(what = d, 
-                  args = dist_arg) + delta
-    df <- data.frame(rep(c('A', 'B'), each = n), c(Y1, Y2))
-    colnames(df) <- c("group", "Y")
-    p.perm[i] <- median.test(x = Y1, y = Y2)
-    p.wmw[i] <- wilcox.test(Y1, Y2, exact = TRUE)$p.value
-    p.t[i] <- pvalue(oneway_test(Y~group, data = df, 
-                                 distribution = approximate(nresample = 10000)))
-  }
-  if(FALSE){
-    hist(p.perm)
-    hist(p.wmw)
-  }
-  return(c(mean(p.perm < p_value),
-           mean(p.wmw < p_value),
-           mean(p.t < p_value)
-  )
-  )
-}
-
 # Simulations
-n <- 20
+n <- 20         # sample size
+N <- 200        # test simulations
 distributions <- c('rt', 'rt', 'rexp', 'rlogis', 'rnorm', 'runif', 'rlaplace')
 dist_names <- c('t3', 't5', 'exp', 'logis', 'norm', 'unif', 'laplace')
 dist_args <- list(list(n, 3), list(n, 5), list(n), list(n), list(n), list(n), list(n))
 
-power.perm <- power.wmw <- power.t <- c()
+power.med <- power.wmw <- power.t <- c()
 
-for(delta in c(0, 0.5, 0.75)){
-  for(i in 1:7){
-    N_tests <- 1000
-    d <- distributions[i]
-    res <- calculate.power(delta, d, dist_args[[i]], N_tests = N_tests)
-    power.perm[i] <- res[1]
-    power.wmw[i] <- res[2]
-    power.t[i] <- res[3]
+# For simulations under H0 (delta = 0) and Ha (delta = 1)
+for(delta in 0:1) {
+  if(delta) {
+    title <- paste0('Power_', n, '_', N) }
+  else{
+    title <- paste0('TypeI_error_', n, '_', N) }
+  
+  # for different distributions
+  for(i in 1:length(distributions)) {
+    cat(paste('power calculation for distribution : ',
+              distributions[i], '\n'))
+    p.med <- p.wmw <- p.t <- c()
+    
+    # perform N tests on randomly drawn samples Y1 and Y2
+    for(j in 1:N) {
+      Y1 <- do.call(what = distributions[i], 
+                    args = dist_args[[i]])
+      Y2 <- do.call(what = distributions[i], 
+                    args = dist_args[[i]]) + delta * sd(Y1)/2
+      df <- data.frame(rep(c('A', 'B'), each = n), c(Y1, Y2))
+      colnames(df) <- c("group", "Y")
+      p.med[j] <- median.test(x = Y1, y = Y2)
+      p.wmw[j] <- wilcox.test(Y1, Y2, exact = TRUE)$p.value
+      p.t[j] <- pvalue(oneway_test(Y~group, data = df, 
+                                   distribution = approximate(nresample = 10000)))
+    }
+    # calculate the proportion of H0 rejections
+    power.med[i] <- mean(p.med < 0.05)
+    power.wmw[i] <- mean(p.wmw < 0.05)
+    power.t[i] <- mean(p.t < 0.05)
   }
   df_power <- data.frame(Distribution = dist_names,
-                         Perm = rep(x = 0.0, length(distributions)),
+                         med = rep(x = 0.0, length(distributions)),
                          wmw = rep(x = 0.0, length(distributions)),
                          t = rep(x = 0.0, length(distributions)))
-  df_power$Perm <- power.perm
+  
+  df_power$med <- power.med
   df_power$wmw <- power.wmw
   df_power$t <- power.t
   df_power <- melt(df_power, id.vars = 'Distribution')
   
-  write.csv(df_power, paste('delta_', delta*100, '.csv', sep=''))
+  write.csv(df_power, paste(title, '.csv', sep=''))
   
-  if(delta != 0){
-    title <- paste('Power of perm vs wmw for different distributions for delta = ', delta,
-                   '\n(n =', n, ', # simulations =', N_tests, ')')
-  }else{
-    title <- paste('Proportion of type I error - delta = ', delta,
-                   '\n(n =', n, ', # simulations =', N_tests, ')')
-  }
-  
-  plot1 <- ggplot(data = df_power, aes(x = Distribution, y = value, fill = variable)) + 
+  p <- ggplot(data = df_power, aes(x = Distribution, y = value, fill = variable)) + 
     geom_bar(position = 'dodge', stat = 'identity') + 
     ggtitle(title) +
     xlab('Distribution') + 
-    ylab('Power') + 
+    ylab('Power') +
     coord_flip()
-
-  ggsave( paste('delta_', delta*100, '.png', sep = ''), 
-          plot = plot1, 
+  
+  ggsave( paste(title, '.png', sep = ''), 
+          plot = p, 
           device = 'png'
           )
 }
