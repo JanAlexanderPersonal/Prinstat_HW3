@@ -47,14 +47,14 @@ calc.median.diff <- function(ind, vec){
 # vector x and vector y, based on the null hypothesis F1(x) = F2(x)
 #
 # When the number of combinations is sufficiently small to do a full 
-# permutation test (limit at 10000), the full permutation test will
+# permutation test (limit at 5000), the full permutation test will
 # be performed. 
 #
 # param: x = vector values for group 1
 # param: y = vector values group 2
 #
 median.test <- function(x, y){
-  N <- 10000 # maximum number of permutations
+  N <- 5000 # maximum number of permutations
   realization <- median(x) - median(y)		
   len_x <- length(x)
   len_y <- length(y)
@@ -103,37 +103,37 @@ Where $Var(Y_1)$ is based on the known variances of the respective distributions
 + Logistic distribution: $var(X) = s^2\pi^2\frac{2}{6}$. In this case, $s=1$
 
 
-```{r figurePower20, fig.cap="T", echo=FALSE, eval=TRUE}
+```{r figurePower20, fig.cap="Power for 20-element samples", echo=FALSE, eval=TRUE}
 library("ggplot2")
-creat_fig <- function(filename){
+creat_fig <- function(filename, ylabel){
   df_power <- read.csv(filename)
   title <- ""
   p <- ggplot(data = df_power, aes(x = Distribution, y = value, fill = variable)) + 
     geom_bar(position = 'dodge', stat = 'identity') + 
     ggtitle(title) +
     xlab('Distribution') + 
-    ylab('Power') +
+    ylab(ylabel) +
     coord_flip()
   return(p)
 }
 
-n <- 20
+n <- 400
 
-creat_fig(paste0("Power_20_", n, ".csv"))
+creat_fig(paste0("Power_20_", n, ".csv"), ylabel = 'Power')
 ```
-```{r figurePower40, fig.cap="Test", echo=FALSE, eval=TRUE}
-creat_fig(paste0("Power_40_", n, ".csv"))
+```{r figurePower40, fig.cap="Power for 40-element samples", echo=FALSE, eval=TRUE}
+creat_fig(paste0("Power_40_", n, ".csv"), ylabel = 'Power')
 ```
 
 ## Type-I error rate
 
 Next, the simulations were repeated under $H_{0}$ (i.e. with $\delta=0$) to compare the type-I error rate of the median test with the permutation t-test and the Wilcoxon–Mann–Whitney test.
-```{r figureT120, fig.cap="Test", echo=FALSE, eval=TRUE}
-creat_fig(paste0("TypeI_error_20_", n, ".csv"))
+```{r figureT120, fig.cap="Type I error for 20-element samples", echo=FALSE, eval=TRUE}
+creat_fig(paste0("TypeI_error_20_", n, ".csv"), ylabel = 'Type I error')
 ```
 
-```{r figureT140, fig.cap="Test", echo=FALSE, eval=TRUE}
-creat_fig(paste0("TypeI_error_40_", n, ".csv"))
+```{r figureT140, fig.cap="Type I error for 40-element samples", echo=FALSE, eval=TRUE}
+creat_fig(paste0("TypeI_error_40_", n, ".csv"), ylabel = 'Type I error')
 ```
 
 # Conclusion
@@ -144,7 +144,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc rhoncus orci vitae
 \pagebreak
 # Addendum: full code
 Additionally to the function $\texttt{median.test(x,y)}$, we use a function $\texttt{calc.rejection(N, n, delta, p.val = 0.05)}$ to evaluate the proportion of tests where $H_{0}$ is rejected. If $\delta = 0$ (then $H_0$ is true), this represents the type I error proportion. 
-```{r addendum, eval=TRUE}
+```{r addendum, eval=FALSE}
 
 calc.rejection <- function(N, dist, dist_arg, shift, p.val = 0.05){
       # perform N tests on randomly drawn samples Y1 and Y2
@@ -200,7 +200,7 @@ Using the above defined formulas, the simulation can be performed with the follo
 
 ```{r simulations, eval=FALSE, results='hide'}
 # Simulations
-N <- 20    # test simulations
+N <- 400    # test simulations
 power.med <- power.wmw <- power.t <- c()
 
 for(n in c(20, 40)){
@@ -220,10 +220,10 @@ for(n in c(20, 40)){
 
 The influence of the number of simulations is evaluated with the following code.
 
-```{r numsim, eval=TRUE, results='hide'}
+```{r numsim, eval=FALSE, results='hide'}
 
 # Simulations
-N <- c(20, 50, 75, 100, 150, 200, 250)    # test simulations
+N <- c(20, 50, 100, 150, 200, 300, 400, 500)    # test simulations
 error.med <- error.wmw <- error.t <- c()
 
 delta <- 0
@@ -238,21 +238,22 @@ for(N_ in N){
   i <- i+1
 }
 write.csv(error.med, "med.csv")
-write.csv(error.wmw, "wmwcsv")
+write.csv(error.wmw, "wmw.csv")
 write.csv(error.t, 'Ttest.csv')
 ```
 
 ```{r figureErrormed, fig.cap="Evolution of power with N, for the median test", echo=FALSE}
+N <- c(20, 50, 100, 150, 200, 300, 400, 500)    # test simulations
 error.med <- read.csv("med.csv")
-plot(N, error.med, type = 'l')
+plot(N, error.med$x, type = 'l')
 ```
 
 ```{r figureErrorwmw, fig.cap="Evolution of power with N, for the WMW test", echo=FALSE}
 error.wmw <- read.csv("wmw.csv")
-plot(N, error.wmw, , type = 'l')
+plot(N, error.wmw$x, , type = 'l')
 ```
 
 ```{r figureErrort, fig.cap="Evolution of power with N, for the T-test", echo=FALSE}
 error.t <- read.csv("Ttest.csv")
-plot(N, error.t, , type = 'l')
+plot(N, error.t$x, , type = 'l')
 ```
