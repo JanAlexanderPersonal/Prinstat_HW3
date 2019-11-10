@@ -9,6 +9,7 @@ output:
     toc: true
     toc_depth: 3
     number_sections: true
+    fig_caption: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -17,11 +18,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # R function: $\texttt{median.test(x,y)}$
 
-The function $\texttt{median.test(x,y)}$ calculates a permutation p-value associated with $H_{0} : F_{x} = F_{y}$ versus $H_{A} : median_{x} \neq median_{y}$. If the total amount of combinations exceeds 10000, the null-distribution is generated from 10000 random samples. The code is listed below, the included R comments can guide the reader through the code.
+The function $\texttt{median.test(x,y)}$ calculates a permutation p-value associated with $H_{0} : F_{x} = F_{y}$ versus $H_{A} : median_{x} \neq median_{y}$. If the total amount of combinations exceeds 10000, the null-distribution is generated from 10000 random samples. The code is listed below, the include comments can guide the reader through the code.
 
 \vspace{12pt}
+```{r packages, echo=FALSE, include=FALSE}
+packages <- c('coin','ggplot2', 'reshape2', 'rmutil')
+# install.packages(packages)
+lapply(packages, library, character.only = TRUE)
+```
 
-```{r testmedian}
+```{r testmedian, echo=TRUE}
 # FUNCTION: calc.median.diff: --------------
 # Function: calculate the difference in median between two groups.
 #
@@ -32,7 +38,7 @@ calc.median.diff <- function(ind, vec){
   # make both groups
   group1 <- vec[ind]
   group2 <- vec[!(1:length(vec)) %in% ind]
-  # calculate the difference in medians
+  # calculate the difference in means
   return(median(group1) - median(group2))
 }
 
@@ -41,60 +47,91 @@ calc.median.diff <- function(ind, vec){
 # vector x and vector y, based on the null hypothesis F1(x) = F2(x)
 #
 # When the number of combinations is sufficiently small to do a full 
-# permutation test (limit at 15000), the full permutation test will
+# permutation test (limit at 10000), the full permutation test will
 # be performed. 
 #
 # param: x = vector values for group 1
 # param: y = vector values group 2
 #
 median.test <- function(x, y){
-  N <- 10000
-  realization <- median(x) - median(y)
+  N <- 10000 # maximum number of permutations
+  realization <- median(x) - median(y)		
   len_x <- length(x)
   len_y <- length(y)
   vec <- c(x, y)
   len_vec <- len_x + len_y
-  if(choose(n = len_x+len_y, len_x) < N){
-    #cat('A limited number of combinations: full permutation test')
+  if(choose(n = len_vec, len_x) < N){
+    #A limited number of combinations: full permutation test
     median.diff <- combn(len_vec, 
                          len_x, 
                          function(ind){
                            return(calc.median.diff(ind, vec))
                          })
   } else {
-    #cat('Too many combinations - A sample test will be performed.\n')
+    #Too many combinations - A sample test will be performed.
     median.diff <- replicate(N, 
                              calc.median.diff(
                                sample(c(1:len_vec),len_x), 
                                vec)
     )
   }
-  if(FALSE){
-    hist(abs(median.diff), main = paste('p = ', 
-                                        mean(abs(realization) <= abs(median.diff))))
-    abline(v = abs(realization), col = "red",
-           lty = 1, lwd = 2)
-  }
-  # The distribution will be symmetrical. The p-value can be calculated by taking
+  # The distribution will be symmetrical. The p-value can be calculated by
   # the absolute value.
   return(mean(abs(realization) <= abs(median.diff)))
 }
 ```
 
 # Comparison to other tests
+The median test was compared, via simmulations, to two other commenly used tests:
+
+
++ the student t-test;
++ the Wilcoxon-Mann-Whitney test.
+
+The three tests are compared on the basis of the Type I error and on their power.
+
 ## Power
 
-To evaluate the power of the median test as compared to other statistical tests, the proportions of true positive outcomes of the median test, the permutation t-test and the Wilcoxon–Mann–Whitney test were acquired through Monte Carlo simulation. Samples (n = 20 and n = 40) were randomly drawn from different distributions under $H_{a}$ (i.e. for a given delta $\neq$ 0).
-<p>
-![n=20](delta75percent_N1000_n20.png){ width=400px }
-</p>
+To evaluate the power of the median test as compared to other statistical tests, the proportions of true positive outcomes of the median test, the permutation t-test and the Wilcoxon–Mann–Whitney test were acquired through Monte Carlo simulation. Samples (n = 20 and n = 40) were randomly drawn from different distributions under $H_{a}$ (i.e. for a given $\delta = \frac{\sqrt{var{Y_1}}}{2}$).
+
+Where $Var(Y_1)$ is based on the known variances of the respective distributions:
+
++ T-distribution: $var(X) = \frac{\nu}{\nu - 2}$. Thus: $3$ for $\nu=3$ and $\frac{5}{2}$ for $\nu = 5$
++ Exponential distribution: $var(X) = \frac{1}{\lambda^2}$ or 1, when taking $\lambda=1$
++ Uniform distribution: $var(X) = \frac{(b-a)^2}{12}$, or $\frac{1}{12}$ in this case.
++ Laplace distribution: $var(X) = 2b^2$. This is 2 in this case.
++ Logistic distribution: $var(X) = s^2\pi^2\frac{2}{6}$. In this case, $s=1$
+
+
+```{r figurePower20, fig.cap="T", echo=FALSE, eval=FALSE}
+library("ggplot2")
+creat_fig <- function(filename){
+  df_power <- read.csv(filename)
+  title <- ""
+  p <- ggplot(data = df_power, aes(x = Distribution, y = value, fill = variable)) + 
+    geom_bar(position = 'dodge', stat = 'identity') + 
+    ggtitle(title) +
+    xlab('Distribution') + 
+    ylab('Power') +
+    coord_flip()
+  return(p)
+}
+creat_fig("Power_20_20.csv")
+```
+```{r figurePower40, fig.cap="Test", echo=FALSE, eval=FALSE}
+creat_fig("Power_40_2.csv")
+```
 
 ## Type-I error rate
 
-Next, the simulations were repeated under $H_{0}$ (i.e. with delta set equal to zero) to compare the type-I error rate of the median test with the permutation t-test and the Wilcoxon–Mann–Whitney test.
-<p>
-![n=20](delta0percent_N1000_n20.png){ width=400px }
-</p>
+Next, the simulations were repeated under $H_{0}$ (i.e. with $\delta=0$) to compare the type-I error rate of the median test with the permutation t-test and the Wilcoxon–Mann–Whitney test.
+```{r figureT120, fig.cap="Test", echo=FALSE, eval=FALSE}
+creat_fig("TypeI_error_20_2.csv")
+```
+
+```{r figureT140, fig.cap="Test", echo=FALSE, eval=FALSE}
+creat_fig("TypeI_error_40_2.csv")
+```
 
 # Conclusion
 
@@ -103,103 +140,17 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc rhoncus orci vitae
 
 \pagebreak
 # Addendum: full code
+Additionally to the function $\texttt{median.test(x,y)}$, we use a function $\texttt{calc.rejection(N, n, delta, p.val = 0.05)}$ to evaluate the proportion of tests where $H_{0}$ is rejected. If $\delta = 0$ (then $H_0$ is true), this represents the type I error proportion. 
+```{r addendum, eval=TRUE}
 
-```{r addendum, eval=FALSE}
-# HOMEWORK 3
-# Group nr 15
-#
-#
-# Install and load packages
-packages <- c('coin','ggplot2', 'reshape2', 'rmutil')
-# install.packages(packages)
-lapply(packages, library, character.only = TRUE)
-#
-# FUNCTION: calc.median.diff: --------------
-# Function: calculate the difference in median between two groups.
-#
-# param: ind = the indices of the first group
-# param: vec = the complete list with data from group 1 and group 2
-#
-calc.median.diff <- function(ind, vec){
-  # make both groups
-  group1 <- vec[ind]
-  group2 <- vec[!(1:length(vec)) %in% ind]
-  # calculate the difference in medians
-  return(median(group1) - median(group2))
-}
-
-# FUNCTION: median.test: --------------
-# Function: calculate the p-value of the median difference between
-# vector x and vector y, based on the null hypothesis F1(x) = F2(x)
-#
-# When the number of combinations is sufficiently small to do a full 
-# permutation test (limit at 15000), the full permutation test will
-# be performed. 
-#
-# param: x = vector values for group 1
-# param: y = vector values group 2
-#
-median.test <- function(x, y){
-  N <- 10000
-  realization <- median(x) - median(y)
-  len_x <- length(x)
-  len_y <- length(y)
-  vec <- c(x, y)
-  len_vec <- len_x + len_y
-  if(choose(n = len_x+len_y, len_x) < N){
-    #cat('A limited number of combinations: full permutation test')
-    median.diff <- combn(len_vec, 
-                         len_x, 
-                         function(ind){
-                           return(calc.median.diff(ind, vec))
-                         })
-  } else {
-    #cat('Too many combinations - A sample test will be performed.\n')
-    median.diff <- replicate(N, 
-                             calc.median.diff(
-                               sample(c(1:len_vec),len_x), 
-                               vec)
-    )
-  }
-  if(FALSE){
-    hist(abs(median.diff), main = paste('p = ', 
-                                        mean(abs(realization) <= abs(median.diff))))
-    abline(v = abs(realization), col = "red",
-           lty = 1, lwd = 2)
-  }
-  # The distribution will be symmetrical. The p-value can be calculated by taking
-  # the absolute value.
-  return(mean(abs(realization) <= abs(median.diff)))
-}
-
-# Simulations
-n <- 20         # sample size
-N <- 200        # test simulations
-distributions <- c('rt', 'rt', 'rexp', 'rlogis', 'rnorm', 'runif', 'rlaplace')
-dist_names <- c('t3', 't5', 'exp', 'logis', 'norm', 'unif', 'laplace')
-dist_args <- list(list(n, 3), list(n, 5), list(n), list(n), list(n), list(n), list(n))
-
-power.med <- power.wmw <- power.t <- c()
-
-# For simulations under H0 (delta = 0) and Ha (delta = 1)
-for(delta in 0:1) {
-  if(delta) {
-    title <- paste0('Power_', n, '_', N) }
-  else{
-    title <- paste0('TypeI_error_', n, '_', N) }
-  
-  # for different distributions
-  for(i in 1:length(distributions)) {
-    cat(paste('power calculation for distribution : ',
-              distributions[i], '\n'))
+calc.rejection <- function(N, dist, dist_arg, shift, p.val = 0.05){
+      # perform N tests on randomly drawn samples Y1 and Y2
     p.med <- p.wmw <- p.t <- c()
-    
-    # perform N tests on randomly drawn samples Y1 and Y2
     for(j in 1:N) {
-      Y1 <- do.call(what = distributions[i], 
-                    args = dist_args[[i]])
-      Y2 <- do.call(what = distributions[i], 
-                    args = dist_args[[i]]) + delta * sd(Y1)/2
+      Y1 <- do.call(what = dist, 
+                    args = dist_arg)
+      Y2 <- do.call(what = dist, 
+                    args = dist_arg) + shift
       df <- data.frame(rep(c('A', 'B'), each = n), c(Y1, Y2))
       colnames(df) <- c("group", "Y")
       p.med[j] <- median.test(x = Y1, y = Y2)
@@ -208,9 +159,25 @@ for(delta in 0:1) {
                                    distribution = approximate(nresample = 10000)))
     }
     # calculate the proportion of H0 rejections
-    power.med[i] <- mean(p.med < 0.05)
-    power.wmw[i] <- mean(p.wmw < 0.05)
-    power.t[i] <- mean(p.t < 0.05)
+  return(c( mean(p.med < p.val), 
+            mean(p.wmw < p.val),
+            mean(p.t < p.val)
+            )
+         )
+}
+
+calc.df_power <- function(N, n, delta, p.val = 0.05){
+  distributions <- c('rt', 'rt', 'rexp', 'rlogis', 'rnorm', 'runif', 'rlaplace')
+  dist_names <- c('t3', 't5', 'exp', 'logis', 'norm', 'unif', 'laplace')
+  dist_var <- c(3, 5/3, 1, 2*pi^2/6, 1, 1/12, 2)
+  dist_args <- list(list(n, 3), list(n, 5), list(n), list(n), list(n), list(n), list(n))
+  for(i in 1:length(distributions)) {
+    cat(paste('power calculation for distribution : ',
+              distributions[i], '\n'))
+    res <- calc.rejection(N, distributions[i], dist_arg = dist_args[[i]], delta * (dist_var[i])^(1/2) / 2, p.val = 0.05)
+    power.med[i] <- res[1]
+    power.wmw[i] <- res[2]
+    power.t[i] <- res[3]
   }
   df_power <- data.frame(Distribution = dist_names,
                          med = rep(x = 0.0, length(distributions)),
@@ -221,20 +188,64 @@ for(delta in 0:1) {
   df_power$wmw <- power.wmw
   df_power$t <- power.t
   df_power <- melt(df_power, id.vars = 'Distribution')
+  return(df_power)
+}
+
+```
+
+Using the above defined formulas, the simulation can be performed with the following code:
+
+```{r simulations, eval=TRUE, results='hide'}
+# Simulations
+N <- 200    # test simulations
+power.med <- power.wmw <- power.t <- c()
+
+for(n in c(20, 40)){
+# For simulations under H0 (delta = 0) and Ha (delta = 1)
+for(delta in 0:1) {
+  if(delta) {
+    title <- paste0('Power_', n, '_', N) }
+  else{
+    title <- paste0('TypeI_error_', n, '_', N) }
+    
+  df_power <- calc.df_power(N, n, delta)
   
   write.csv(df_power, paste(title, '.csv', sep=''))
-  
-  p <- ggplot(data = df_power, aes(x = Distribution, y = value, fill = variable)) + 
-    geom_bar(position = 'dodge', stat = 'identity') + 
-    ggtitle(title) +
-    xlab('Distribution') + 
-    ylab('Power') +
-    coord_flip()
-  
-  ggsave( paste(title, '.png', sep = ''), 
-          plot = p, 
-          device = 'png'
-          )
+}
 }
 ```
 
+The influence of the number of simulations is evaluated with the following code
+```{r numsim, eval=TRUE, results='hide'}
+
+# Simulations
+N <- c(20, 50)    # test simulations
+error.med <- error.wmw <- error.t <- c()
+
+delta <- 0
+n <- 40
+i <- 1
+
+for(N_ in N){
+  res <- calc.rejection(N_, 'rnorm', list(n), shift = 1/2, p.val = 0.05)
+  error.med[i] <- res[1]
+  error.wmw[i] <- res[2]
+  error.t[i] <- res[3]
+  i <- i+1
+}
+  write.csv(error.med, paste('med', '.csv', sep=''))
+  write.csv(error.wmw, paste('wmw', '.csv', sep=''))
+  write.csv(error.t, paste('Ttest', '.csv', sep=''))
+```
+
+```{r figureErrormed, fig.cap="Evolution of power with N, for the median test", echo=FALSE}
+plot(N, error.med, type = 'l')
+```
+
+```{r figureErrorwmw, fig.cap="Evolution of power with N, for the WMW test", echo=FALSE}
+plot(N, error.wmw, , type = 'l')
+```
+
+```{r figureErrort, fig.cap="Evolution of power with N, for the T-test", echo=FALSE}
+plot(N, error.t, , type = 'l')
+```
