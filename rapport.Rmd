@@ -103,7 +103,7 @@ Where $Var(Y_1)$ is based on the known variances of the respective distributions
 + Logistic distribution: $var(X) = s^2\pi^2\frac{2}{6}$. In this case, $s=1$
 
 
-```{r figurePower20, fig.cap="T", echo=FALSE, eval=FALSE}
+```{r figurePower20, fig.cap="T", echo=FALSE, eval=TRUE}
 library("ggplot2")
 creat_fig <- function(filename){
   df_power <- read.csv(filename)
@@ -116,21 +116,24 @@ creat_fig <- function(filename){
     coord_flip()
   return(p)
 }
-creat_fig("Power_20_20.csv")
+
+n <- 20
+
+creat_fig(paste0("Power_20_", n, ".csv"))
 ```
-```{r figurePower40, fig.cap="Test", echo=FALSE, eval=FALSE}
-creat_fig("Power_40_2.csv")
+```{r figurePower40, fig.cap="Test", echo=FALSE, eval=TRUE}
+creat_fig(paste0("Power_40_", n, ".csv"))
 ```
 
 ## Type-I error rate
 
 Next, the simulations were repeated under $H_{0}$ (i.e. with $\delta=0$) to compare the type-I error rate of the median test with the permutation t-test and the Wilcoxon–Mann–Whitney test.
-```{r figureT120, fig.cap="Test", echo=FALSE, eval=FALSE}
-creat_fig("TypeI_error_20_2.csv")
+```{r figureT120, fig.cap="Test", echo=FALSE, eval=TRUE}
+creat_fig(paste0("TypeI_error_20_", n, ".csv"))
 ```
 
-```{r figureT140, fig.cap="Test", echo=FALSE, eval=FALSE}
-creat_fig("TypeI_error_40_2.csv")
+```{r figureT140, fig.cap="Test", echo=FALSE, eval=TRUE}
+creat_fig(paste0("TypeI_error_40_", n, ".csv"))
 ```
 
 # Conclusion
@@ -195,31 +198,32 @@ calc.df_power <- function(N, n, delta, p.val = 0.05){
 
 Using the above defined formulas, the simulation can be performed with the following code:
 
-```{r simulations, eval=TRUE, results='hide'}
+```{r simulations, eval=FALSE, results='hide'}
 # Simulations
-N <- 200    # test simulations
+N <- 20    # test simulations
 power.med <- power.wmw <- power.t <- c()
 
 for(n in c(20, 40)){
 # For simulations under H0 (delta = 0) and Ha (delta = 1)
-for(delta in 0:1) {
-  if(delta) {
-    title <- paste0('Power_', n, '_', N) }
-  else{
-    title <- paste0('TypeI_error_', n, '_', N) }
+  for(delta in 0:1) {
+    if(delta) {
+      title <- paste0('Power_', n, '_', N) }
+    else{
+      title <- paste0('TypeI_error_', n, '_', N) }
+      
+    df_power <- calc.df_power(N, n, delta)
     
-  df_power <- calc.df_power(N, n, delta)
-  
-  write.csv(df_power, paste(title, '.csv', sep=''))
-}
+    write.csv(df_power, paste(title, '.csv', sep=''))
+  }
 }
 ```
 
-The influence of the number of simulations is evaluated with the following code
+The influence of the number of simulations is evaluated with the following code.
+
 ```{r numsim, eval=TRUE, results='hide'}
 
 # Simulations
-N <- c(20, 50)    # test simulations
+N <- c(20, 50, 75, 100, 150, 200, 250)    # test simulations
 error.med <- error.wmw <- error.t <- c()
 
 delta <- 0
@@ -233,19 +237,22 @@ for(N_ in N){
   error.t[i] <- res[3]
   i <- i+1
 }
-  write.csv(error.med, paste('med', '.csv', sep=''))
-  write.csv(error.wmw, paste('wmw', '.csv', sep=''))
-  write.csv(error.t, paste('Ttest', '.csv', sep=''))
+write.csv(error.med, "med.csv")
+write.csv(error.wmw, "wmwcsv")
+write.csv(error.t, 'Ttest.csv')
 ```
 
 ```{r figureErrormed, fig.cap="Evolution of power with N, for the median test", echo=FALSE}
+error.med <- read.csv("med.csv")
 plot(N, error.med, type = 'l')
 ```
 
 ```{r figureErrorwmw, fig.cap="Evolution of power with N, for the WMW test", echo=FALSE}
+error.wmw <- read.csv("wmw.csv")
 plot(N, error.wmw, , type = 'l')
 ```
 
 ```{r figureErrort, fig.cap="Evolution of power with N, for the T-test", echo=FALSE}
+error.t <- read.csv("Ttest.csv")
 plot(N, error.t, , type = 'l')
 ```
