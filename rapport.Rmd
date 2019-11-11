@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # R function: $\texttt{median.test(x,y)}$
 
-The function $\texttt{median.test(x,y)}$ calculates a permutation p-value associated with $H_{0} : F_{x} = F_{y}$ versus $H_{A} : median_{x} \neq median_{y}$. If the total amount of combinations exceeds 10000, the null-distribution is generated from 10000 random samples. The code is listed below, the include comments can guide the reader through the code.
+The function $\texttt{median.test(x,y)}$ calculates a permutation p-value associated with $H_{0} : F_{x} = F_{y}$ versus $H_{A} : median_{x} \neq median_{y}$. If the total amount of combinations exceeds 5000, the null-distribution is generated from 5000 random samples. The code is listed below, the include comments can guide the reader through the code.
 
 \vspace{12pt}
 ```{r packages, echo=FALSE, include=FALSE}
@@ -83,16 +83,17 @@ median.test <- function(x, y){
 
 # Comparison to other tests
 The median test was compared, via simmulations, to two other commenly used tests:
-
-
 + the student t-test;
 + the Wilcoxon-Mann-Whitney test.
 
-The three tests are compared on the basis of the Type I error and on their power.
+The three tests are compared on the basis of the Type I error and on their power. This comparision is made for two sample sizes:
+
++ 20 observations in each sample
++ 40 observations in each sample
 
 ## Power
 
-To evaluate the power of the median test as compared to other statistical tests, the proportions of true positive outcomes of the median test, the permutation t-test and the Wilcoxon–Mann–Whitney test were acquired through Monte Carlo simulation. Samples (n = 20 and n = 40) were randomly drawn from different distributions under $H_{a}$ (i.e. for a given $\delta = \frac{\sqrt{var{Y_1}}}{2}$).
+To evaluate the power of the median test as compared to other statistical tests, the proportions of true positive outcomes of the median test, the permutation t-test and the Wilcoxon–Mann–Whitney test were acquired through Monte Carlo simulation (400 simulations). Samples (n = 20 and n = 40) were randomly drawn from different distributions under $H_{a}$ (i.e. for a given $\delta = \frac{\sqrt{var{Y_1}}}{2}$).
 
 Where $Var(Y_1)$ is based on the known variances of the respective distributions:
 
@@ -100,14 +101,12 @@ Where $Var(Y_1)$ is based on the known variances of the respective distributions
 + Exponential distribution: $var(X) = \frac{1}{\lambda^2}$ or 1, when taking $\lambda=1$
 + Uniform distribution: $var(X) = \frac{(b-a)^2}{12}$, or $\frac{1}{12}$ in this case.
 + Laplace distribution: $var(X) = 2b^2$. This is 2 in this case.
-+ Logistic distribution: $var(X) = s^2\pi^2\frac{2}{6}$. In this case, $s=1$
-
++ Logistic distribution: $var(X) = s^2\pi^2\frac{2}{6}$. In this case, $s=1$.
 
 ```{r figurePower20, fig.cap="Power for 20-element samples", echo=FALSE, eval=TRUE}
 library("ggplot2")
-creat_fig <- function(filename, ylabel){
+creat_fig <- function(filename, ylabel, title){
   df_power <- read.csv(filename)
-  title <- ""
   p <- ggplot(data = df_power, aes(x = Distribution, y = value, fill = variable)) + 
     geom_bar(position = 'dodge', stat = 'identity') + 
     ggtitle(title) +
@@ -119,21 +118,21 @@ creat_fig <- function(filename, ylabel){
 
 n <- 400
 
-creat_fig(paste0("Power_20_", n, ".csv"), ylabel = 'Power')
+creat_fig(paste0("Power_20_", n, ".csv"), ylabel = 'Power', title = "Power for 20-element samples")
 ```
 ```{r figurePower40, fig.cap="Power for 40-element samples", echo=FALSE, eval=TRUE}
-creat_fig(paste0("Power_40_", n, ".csv"), ylabel = 'Power')
+creat_fig(paste0("Power_40_", n, ".csv"), ylabel = 'Power', title = "Power for 40-element samples")
 ```
 
 ## Type-I error rate
 
 Next, the simulations were repeated under $H_{0}$ (i.e. with $\delta=0$) to compare the type-I error rate of the median test with the permutation t-test and the Wilcoxon–Mann–Whitney test.
 ```{r figureT120, fig.cap="Type I error for 20-element samples", echo=FALSE, eval=TRUE}
-creat_fig(paste0("TypeI_error_20_", n, ".csv"), ylabel = 'Type I error')
+creat_fig(paste0("TypeI_error_20_", n, ".csv"), ylabel = 'Type I error', title="Type I error for 20-element samples")
 ```
 
 ```{r figureT140, fig.cap="Type I error for 40-element samples", echo=FALSE, eval=TRUE}
-creat_fig(paste0("TypeI_error_40_", n, ".csv"), ylabel = 'Type I error')
+creat_fig(paste0("TypeI_error_40_", n, ".csv"), ylabel = 'Type I error', title="Type I error for 40-element samples")
 ```
 
 # Conclusion
@@ -219,6 +218,11 @@ for(n in c(20, 40)){
 ```
 
 The influence of the number of simulations is evaluated with the following code.
+This was performed because the calculations took (to our surprise) very long to run. 
+To keep the computational time somewhat manageable, the number of Monte Carlo simulations was reduced.
+The idea of the following graphs is to estimate difference extra simulations make in stabilizing the result. We can observe that:
++ The WMW tests seems to deliver a stable result from 300 Monte Carlo simulations on
++ Both the median test and the T-test seem to be barely stabilized at 400 or 500 simulations.
 
 ```{r numsim, eval=FALSE, results='hide'}
 
