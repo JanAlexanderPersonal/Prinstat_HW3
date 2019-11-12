@@ -267,7 +267,7 @@ The result (see below) indicate that - for the given distribution, amount of per
 ```{r numsim, eval=FALSE, include=FALSE}
 
 # Simulations
-N <- c(20, 50, 100, 150, 200, 300, 400, 500, 1000)
+N <- c(20, 50, 100, 150, 200, 300, 400, 500,750,  1000, 1250, 1500)
 error.med <- error.wmw <- error.t <- c()
 
 n <- 40
@@ -286,12 +286,12 @@ write.csv(error.t, 'Ttest.csv')
 ```
 
 ```{r figureErrormed, fig.cap="The relative power for an increasing number of Monte Carlo simulations", echo=FALSE}
-N <- c(20, 50, 100, 150, 200, 300, 400, 500, 1000)
+N <- c(20, 50, 100, 150, 200, 300, 400, 500,750,  1000, 1250, 1500)
 error.med <- read.csv("med.csv")
 error.wmw <- read.csv("wmw.csv")
 error.t <- read.csv("Ttest.csv")
 
-df <- data.frame("N" = c(20, 50, 100, 150, 200, 300, 400, 500, 1000),
+df <- data.frame("N" = c(20, 50, 100, 150, 200, 300, 400, 500,750,  1000, 1250, 1500),
                  "med" = error.med[,2],
                  "wmv" = error.wmw[,2],
                  "t" = error.t[,2])
